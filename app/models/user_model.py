@@ -20,13 +20,6 @@ class User(Model):
     password = fields.CharField(max_length=100, null=False)
     is_verified = fields.BooleanField(default=False)
     join_date = fields.DatetimeField(default=datetime.utcnow)
-    
-    def __init__(self):
-        super().__init__()
-        self.set_image_full_url()
-    
-    def set_image_full_url(self):
-        self.image_url = AppConfig.API_URL + str(self.image_url) if self.image_url else ""
 
 user_pydantic = pydantic_model_creator(User, name="User", exclude=("is_verified", "uuid", ))
 user_pydanticIn = pydantic_model_creator(User, name="UserIn", exclude=("join_date", "uuid", "is_verified" ))
