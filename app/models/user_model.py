@@ -13,7 +13,7 @@ class User(Model):
     last_name = fields.CharField(max_length=100, null=False)
     user_name = fields.CharField(max_length=20, null=False, unique=True)
     email = fields.CharField(max_length=200, null=False, unique=True)
-    image_url = fields.CharField(max_length=100, null=False, unique=True)
+    image_url = fields.CharField(max_length=100, null=True, unique=True)
     phone_number = fields.CharField(max_length=9, null=False)
     selected_exam = fields.JSONField(null=False)
     guardian_phone_number = fields.CharField(max_length=9, null=False)
