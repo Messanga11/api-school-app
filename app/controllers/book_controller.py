@@ -1,5 +1,5 @@
 import base64
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from controllers.auth_controller import get_current_user
 
 from auth import *
@@ -15,10 +15,14 @@ router = APIRouter(
 
 
 @router.post("")
-async def create_book(book: file_pydanticIn):
+async def create_book(title=Form(...), type=Form(...), topic_uuid=Form(...), file:UploadFile=File(...)):
     
-    book_obj = book.dict(exclude_unset=True)
-    topic = Topic.get(uuid = book_obj["topic_uuid"])
+    book_obj = {
+        "title": title,
+        "type": type,
+        "topic_uuid": topic_uuid,
+    }
+    topic = await Topic.get(uuid = book_obj["topic_uuid"])
 
     if not topic:
         raise HTTPException(
@@ -26,7 +30,7 @@ async def create_book(book: file_pydanticIn):
             detail="Topic not exist"
         )
     
-    url = create_file(base64)
+    url = await create_file(file)
 
     book_obj = await FileModel.create(**book_obj, topic_id=book_obj["topic_uuid"], url=url)
 

@@ -6,6 +6,7 @@ class Video(Model):
     id = fields.IntField(pk=True, index=True)
     uuid = fields.CharField(unique=True, default=uuid.uuid4(), max_length=100)
     title = fields.CharField(max_length=100)
+    url = fields.CharField(max_length=100)
     topic_uuid = fields.CharField(max_length=100)
     topic = fields.ForeignKeyField("models.Video", related_name="videos")
 

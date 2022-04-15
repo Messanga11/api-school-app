@@ -9,6 +9,7 @@ from .user_controller import router as user
 from .student_controller import router as student
 from .message_controller import router as message
 from .paper_controller import router as paper
+from .file import router as files
 
 api_router = APIRouter()
 
@@ -22,3 +23,4 @@ api_router.include_router(topic)
 api_router.include_router(video)
 api_router.include_router(subject)
 api_router.include_router(message)
+api_router.include_router(files)

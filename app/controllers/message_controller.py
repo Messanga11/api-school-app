@@ -1,4 +1,10 @@
+from typing import List
 from fastapi import APIRouter, Depends
+from core.settings import AppConfig
+from schema.app_schema import DatalistResponseMembers
+from schema.message import ConversationOut
+from schema.app_schema import DataList
+from models.conversation_model import Conversation
 from schema.message import MessageIn
 from controllers.auth_controller import get_current_user
 from tortoise.query_utils import Prefetch
@@ -14,13 +20,34 @@ router = APIRouter(
     tags=["message"]
 )
 
-@router.get("/conversations")
-async def get_conversation(current_user=Depends(get_current_user)):
-    return {
-        "data": await Conversation.filter(members__uuid = current_user.uuid).prefetch_related(
-            Prefetch('members', queryset=User.get(uuid=current_user.uuid))
-        ).all()
-    }
+@router.get("/conversations", response_model=DatalistResponseMembers)
+async def get_conversations(current_user=Depends(get_current_user)):
+    data = await Conversation.filter(members__uuid = current_user.uuid).prefetch_related("members").all()
+    
+    data_to_send = []
+    
+    for d in data:
+        members = await d.members.all()
+        
+        for member in members:
+            member.image_url = AppConfig.API_URL + str(member.image_url)
+        
+        last_message = dict(await Message.filter(conversation_id=d.uuid).first().values())["text"]
+        
+        data_to_send.append({
+            "uuid": str(d.uuid),
+            "last_message": last_message,
+            "members": members
+        })
+        
+    print(data_to_send)
+    return DataList(
+        current_page=1,
+        pages=1,
+        per_page=1,
+        total=1,
+        data = data_to_send
+    )
 
 
 @router.post("")
@@ -59,7 +86,8 @@ async def create_message(message: MessageIn, current_user = Depends(get_current_
     await conversation.members.add(user)
     await conversation.members.add(current_user)
     
-    message_obj = await Message.create(receiver=user, text=message_obj["text"], conversation_id=conversation.uuid)
+    message_obj = await Message.create(receiver=user, text=message_obj["text"], conversation_id=conversation.uuid,
+    sender_uuid=current_user.uuid                                   )
     
     new_message = await message_pydantic.from_tortoise_orm(message_obj)
     return new_message
@@ -67,7 +95,7 @@ async def create_message(message: MessageIn, current_user = Depends(get_current_
 @router.get("/{conversation_uuid}")
 async def get_messages(conversation_uuid: str):
     return {
-        "data": await Message.filter(conversation_id=conversation_uuid)
+        "data": await message_pydanticOut.from_queryset(Message.filter(conversation_id=conversation_uuid))
     }
 
 @router.get("/{id}")

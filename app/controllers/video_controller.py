@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends
+from schema.Video import VideoIn
+from utils import create_file
 from controllers.auth_controller import get_current_user
 
 from auth import *
@@ -10,15 +12,16 @@ router = APIRouter(
     tags=["videos"]
 )
 
-
-@router.post("/")
-async def create_video(video: video_pydanticIn, user = Depends(get_current_user)):
+@router.post("")
+async def create_video(video: VideoIn, user = Depends(get_current_user)):
     video_obj = video.dict(exclude_unset=True)
-    video_obj = await Video.create(**video_obj)
+    url = await create_file(video_obj["base_64"])
+    video_obj = video.dict(exclude_unset=True, exclude=("base_64"))
+    video_obj = await Video.create(**video_obj, url=url)
     new_video = await video_pydantic.from_tortoise_orm(video_obj)
     return new_video
 
-@router.get("/")
+@router.get("")
 async def get_videos():
     videos = await Video.all()
     return videos

@@ -14,7 +14,6 @@ class Conversation(Model):
     members: fields.ManyToManyRelation[Any] = fields.ManyToManyField(
         "models.User", related_name="conversations", through="user_conversation"
     )
-
 pydantic_conversation = pydantic_model_creator(
     Conversation,
     name="Conversation",

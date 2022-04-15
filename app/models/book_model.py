@@ -13,7 +13,6 @@ class Book(Model):
     uuid = fields.UUIDField(pk=True)
     title= fields.CharField(max_length=100)
     url= fields.CharField(max_length=100)
-    topic_uuid = fields.CharField(max_length=100)
     topic = fields.ForeignKeyField("models.Topic", related_name="books")
 
 book_pydantic = pydantic_model_creator(Book, name="Book", exclude=("uuid", ))

@@ -15,7 +15,7 @@ def get_hashed_password(password):
     return pwd_context.hash(password)
 
 async def verify_token(token: str):
-    token = token.replace('\"', "")
+    print(token)
     try:
         payload = jwt.decode(token, config_credentials["SECRET"], algorithms=["HS256"])
         user = await User.get(uuid = payload["user"]["uuid"])

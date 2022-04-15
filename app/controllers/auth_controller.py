@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from utils import get_image_full_url
+from core.settings import AppConfig
 from models.user_model import *
 from auth import *
 from models.guardian_model import *
@@ -43,6 +45,7 @@ async def generate_token(request_form: OAuth2PasswordRequestForm = Depends()):
 
 @router.post("/me")
 async def user_infos(user: user_pydanticOut = Depends(get_current_user)):
+    user.image_url = get_image_full_url(user.image_url)
     return user
 
 @post_save(User)

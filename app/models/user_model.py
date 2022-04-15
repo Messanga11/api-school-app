@@ -4,9 +4,8 @@ from enum import unique
 from tortoise import Model, fields
 from datetime import datetime
 from tortoise.contrib.pydantic import pydantic_model_creator
-from models.friend_match_model import FriendMatch
+from core.settings import AppConfig
 
-from models.conversation_model import Conversation
 
 class User(Model):
     uuid = fields.UUIDField(pk=True)
@@ -14,14 +13,20 @@ class User(Model):
     last_name = fields.CharField(max_length=100, null=False)
     user_name = fields.CharField(max_length=20, null=False, unique=True)
     email = fields.CharField(max_length=200, null=False, unique=True)
+    image_url = fields.CharField(max_length=100, null=False, unique=True)
     phone_number = fields.CharField(max_length=9, null=False)
     selected_exam = fields.JSONField(null=False)
     guardian_phone_number = fields.CharField(max_length=9, null=False)
     password = fields.CharField(max_length=100, null=False)
     is_verified = fields.BooleanField(default=False)
     join_date = fields.DatetimeField(default=datetime.utcnow)
-    conversations = fields.ManyToManyRelation[Conversation]
-    friends_matches = fields.ManyToManyRelation[FriendMatch]
+    
+    def __init__(self):
+        super().__init__()
+        self.set_image_full_url()
+    
+    def set_image_full_url(self):
+        self.image_url = AppConfig.API_URL + str(self.image_url) if self.image_url else ""
 
 user_pydantic = pydantic_model_creator(User, name="User", exclude=("is_verified", "uuid", ))
 user_pydanticIn = pydantic_model_creator(User, name="UserIn", exclude=("join_date", "uuid", "is_verified" ))
