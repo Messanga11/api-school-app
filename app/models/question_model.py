@@ -9,7 +9,7 @@ class Question(Model):
     image = fields.TextField()
     text = fields.CharField(max_length=100)
     paper = fields.ForeignKeyField("models.Paper", related_name="questions")
-    answers = fields.ReverseRelation["Answer"]
+    answers: fields.ReverseRelation[Answer]
 
 question_pydantic = pydantic_model_creator(Question, name="Question", exclude=("uuid", ))
 question_pydanticIn = pydantic_model_creator(Question, name="QuestionIn", exclude=("uuid"))

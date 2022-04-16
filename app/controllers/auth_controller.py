@@ -84,6 +84,21 @@ async def user_registration(login_form: login_schema):
         "message": "Connected successfully",
         "token": token,
     }
+    
+@router.post("/login/{guardian_phone_number}")
+async def user_registration(guardian_phone_number: int):
+    login_infos = await User.filter(guardian_phone_number=guardian_phone_number).first()
+    if not login_infos:
+        raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid phone number",
+        headers=["WWW-Authenticate", "Bearer"]
+        )
+    token = await token_generator(login_infos.email, login_infos.password, False)
+    return {
+        "message": "Connected successfully",
+        "token": token,
+    }
 
 templates = Jinja2Templates(directory="templates")
 

@@ -68,14 +68,30 @@ async def validate_paper(answers_form:AnswerForm):
     
     answers_form_obj = answers_form.dict(exclude_unset=True,)
 
-    correct_answers = await Question.filter(paper_id=answers_form_obj["paper_uuid"]).all()
+    questions_db = await Question.filter(paper_id=answers_form_obj["paper_uuid"]).all()
+    
+    correct_answers = []
+    for question in questions_db:
+        answers = await question.answers.all()
+        j = 0
+        for answer in answers:
+            if answer.is_correct:
+                correct_answers.append(answer.uuid)
+                break
+            if j == len(answers) - 1:
+                correct_answers.append("")
+            j = j + 1
+    
+    print(correct_answers)     
+    print(answers_form_obj["answers"])   
+    
     
     correct_count = 0
     index = 0 # Track the index in the answer array
     
     # Question and answer creation
     for answer in answers_form_obj["answers"]:
-        if answer == correct_answers[index].uuid:
+        if answer == str(correct_answers[index]):
             correct_count = correct_count + 1            
 
     return {
@@ -155,25 +171,21 @@ async def update_paper(paper: PaperInUpdateSchema):
     await paper_db.refresh_from_db()
 
     updated_paper = await paper_pydanticOut.from_tortoise_orm(paper_db)
-    
-    print(paper_obj["questions"])
 
     # Question and answer creation
+    quests_db = await Question.filter(paper_id=paper_db.uuid).all()
+    for q in quests_db:
+        await q.delete()
+        
     for question_answer in paper_obj["questions"]:
-        quest_db = await Question.get(uuid=question_answer["uuid"])
-        question = None
-        if quest_db:
-            question = await quest_db.update_from_dict({**question_answer["question"], "paper_id": updated_paper.dict()["uuid"]})
-            await quest_db.save()
-            await quest_db.refresh_from_db()
-        else:
-            question = await Question.create(**question_answer["question"], paper_id=updated_paper.dict()["uuid"])
+        
+        question = await Question.create(**question_answer["question"], paper_id=updated_paper.dict()["uuid"])
 
         if question:
             created_question = await question_pydanticOut.from_tortoise_orm(question)
             for answer in question_answer["answers"]:
                 
-                ans_db = await Question.get(uuid=question_answer["uuid"])
+                ans_db = await Question.filter(uuid=dict(question_answer).get("uuid")).first()
                 
                 if ans_db:
                     await ans_db.update_from_dict({**answer, "question_id" : dict(question)["uuid"]})

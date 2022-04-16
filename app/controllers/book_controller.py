@@ -1,5 +1,6 @@
 import base64
 from fastapi import APIRouter, Depends, File, Form, UploadFile
+from utils import get_image_full_url
 from controllers.auth_controller import get_current_user
 
 from auth import *
@@ -39,7 +40,11 @@ async def create_book(title=Form(...), type=Form(...), topic_uuid=Form(...), fil
 
 @router.get("")
 async def get_books():
-    books = await file_pydanticOut.from_queryset(FileModel.all())
+    books = await FileModel.all()
+    
+    for book in books:
+        book.url = get_image_full_url(book.url)
+    
     return {
         "data": books
     }
