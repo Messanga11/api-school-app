@@ -4,6 +4,7 @@ from passlib.context import CryptContext
 from dotenv import dotenv_values
 from  fastapi import status
 import jwt
+from models.school_model import School
 from models.user_model import *
 from tortoise.queryset import QuerySet
 
@@ -15,10 +16,37 @@ def get_hashed_password(password):
     return pwd_context.hash(password)
 
 async def verify_token(token: str):
-    print(token)
+    if token.find('.') == -1:
+        raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token",
+                    headers=["WWW-Authenticate", "Bearer"]
+                )
     try:
         payload = jwt.decode(token, config_credentials["SECRET"], algorithms=["HS256"])
-        user = await User.get(uuid = payload["user"]["uuid"])
+        if dict(payload).get("type") == "SCHOOL":
+            school = await School.filter(email=payload["email"]).first()
+            return school
+        else:
+            user = await User.get(uuid = payload["user"]["uuid"])
+            return user
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers=["WWW-Authenticate", "Bearer"]
+        )
+
+async def verify_token_school(token: str):
+    if token.find('.') == -1:
+        raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token",
+                    headers=["WWW-Authenticate", "Bearer"]
+                )
+    try:
+        payload = jwt.decode(token, config_credentials["SECRET"], algorithms=["HS256"])
+        user = await School.get(uuid = payload["user"]["uuid"])
         return user
     except:
         raise HTTPException(
@@ -42,22 +70,46 @@ async def authenticate_user(email, password, ignore_password_check: bool = False
         return user
     return False
 
-async def token_generator(email: str, password: str, ignore_password_check: bool = False):
-    user = await authenticate_user(email, password, ignore_password_check)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
-            headers=["WWW-Authenticate", "Bearer"]
-        )
+async def authenticate_school(email, password):
+    school = await QuerySet(School).filter(email=email).first()
 
-    token_data = {
-        "is_admin": False,
-        "user": {
-            "uuid": str(user["uuid"])
-        },
-    }
+    if school and await verify_password(password, school.password):
+        return school
+    return False
 
-    token = jwt.encode(token_data, config_credentials["SECRET"], algorithm="HS256")
+async def token_generator(email: str, password: str, ignore_password_check: bool = False, type:str="USER"):
+    
+    if type == "SCHOOL":
+        school = await authenticate_school(email, password)
+        
+        if school:
+            token_data = {
+                "email": school.email,
+                "type": "SCHOOL"
+            }
+            token = jwt.encode(token_data, config_credentials["SECRET"], algorithm="HS256")
+            return token
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password"
+            )
+    else:
+        user = await authenticate_user(email, password, ignore_password_check)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password",
+                headers=["WWW-Authenticate", "Bearer"]
+            )
 
-    return token
+        token_data = {
+            "is_admin": False,
+            "user": {
+                "uuid": str(user["uuid"])
+            },
+        }
+
+        token = jwt.encode(token_data, config_credentials["SECRET"], algorithm="HS256")
+
+        return token

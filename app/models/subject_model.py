@@ -2,7 +2,6 @@ from tortoise import Model, fields
 from models.user_model import User
 from models.topic_model import Topic
 from tortoise.contrib.pydantic import pydantic_model_creator
-import uuid
 
 class Subject(Model):
     uuid = fields.UUIDField(pk=True)

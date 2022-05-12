@@ -1,3 +1,4 @@
+from typing import Union
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from utils import get_image_full_url
 from core.settings import AppConfig
@@ -44,8 +45,9 @@ async def generate_token(request_form: OAuth2PasswordRequestForm = Depends()):
     }
 
 @router.post("/me")
-async def user_infos(user: user_pydanticOut = Depends(get_current_user)):
-    user.image_url = get_image_full_url(user.image_url)
+async def user_infos(user: Union[User, School] = Depends(get_current_user)):
+    if isinstance(user, User):
+        user.image_url = get_image_full_url(user.image_url)
     return user
 
 @post_save(User)
@@ -76,6 +78,16 @@ async def user_registration(user: user_pydanticIn):
         "data": f"Hello {new_user.user_name}, thanks for your registration, check the link in email inbox we just sent."
     }
 
+@router.post("/login/school")
+async def user_registration(login_form: login_schema):
+    login_infos = login_form.dict(exclude_unset=True)
+    token = await token_generator(login_infos["email"], login_infos["password"], False, type="SCHOOL")
+    return {
+        "message": "Connected successfully",
+        "token": token,
+        "type": "SCHOOL"
+    }
+
 @router.post("/login")
 async def user_registration(login_form: login_schema):
     login_infos = login_form.dict(exclude_unset=True)
@@ -83,6 +95,7 @@ async def user_registration(login_form: login_schema):
     return {
         "message": "Connected successfully",
         "token": token,
+        "type": "SCHOOL"
     }
     
 @router.post("/login/{guardian_phone_number}")

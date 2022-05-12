@@ -7,6 +7,8 @@ from .topic_controller import router as topic
 from .video_controller import router as video
 from .user_controller import router as user
 from .student_controller import router as student
+from .school_controller import router as school
+from .school_post_controller import router as school_post
 from .message_controller import router as message
 from .paper_controller import router as paper
 from .file import router as files
@@ -24,3 +26,5 @@ api_router.include_router(video)
 api_router.include_router(subject)
 api_router.include_router(message)
 api_router.include_router(files)
+api_router.include_router(school)
+api_router.include_router(school_post)

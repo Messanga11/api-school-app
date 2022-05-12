@@ -14,3 +14,5 @@ from .question_model import *
 from .answer_model import *
 from .conversation_model import *
 from .friend_match_model import *
+from .school_model import *
+from .school_post_model import *
