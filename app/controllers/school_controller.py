@@ -33,8 +33,11 @@ async def create_school(school:school_pydanticIn):
     return await school_pydanticOut.from_tortoise_orm(school_db)
 
 @router.get("", response_model=DataList)
-async def schools(page:int=1, per_page:int=10, keyword:Optional[str]=None, region:Optional[str]=None):
+async def schools(page:int=1, per_page:int=10, keyword:Optional[str]=None, type:str="SCHOOL", region:Optional[str]=None):
     query_set = QuerySet(School)
+    
+    if type:
+        query_set = query_set.filter(type=type)
     
     if keyword:
         query_set = query_set.filter(name__icontains=f"{keyword}")
