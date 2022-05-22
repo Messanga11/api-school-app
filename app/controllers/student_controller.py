@@ -12,7 +12,7 @@ from models.user_model import *
 
 
 router = APIRouter(
-    prefix="/administration/users",
+    prefix="/users",
     tags=["users"]
 )
 

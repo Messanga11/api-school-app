@@ -1,4 +1,7 @@
+from email import message
+import uuid
 from fastapi import APIRouter, Depends
+from schema.UserSchema import UserIn
 from controllers.auth_controller import get_current_user
 
 from auth import *
@@ -11,9 +14,33 @@ router = APIRouter(
 )
 
 
-@router.post("/")
-async def create_user(user: user_pydanticIn, logged_user_data: user_pydanticOut=Depends(get_current_user)):
+@router.post("")
+async def create_user(user: UserIn):
     user_obj = user.dict(exclude_unset=True)
+    email_already_exist = await User.get_or_none(email=user_obj["email"])
+    if email_already_exist:
+        raise HTTPException(
+            status_code=401,
+            detail="A user with this email already exists"
+        )
+    user_name_already_exist = await User.get_or_none(user_name=user_obj["user_name"])
+    if user_name_already_exist:
+        raise HTTPException(
+            status_code=401,
+            detail="A user with this user name already exists"
+        )
+    phone_number_already_exist = await User.get_or_none(phone_number=user_obj["phone_number"])
+    if phone_number_already_exist:
+        raise HTTPException(
+            status_code=401,
+            detail="A user with this phone number already exists"
+        )
+    # guardian_phone_number_already_exist = await User.filter(guardian_phone_number=user_obj["guardian_phone_number"]).first()
+    # if guardian_phone_number_already_exist:
+    #     raise HTTPException(
+    #         status_code=401,
+    #         detail="A user with this guardian phone number already exists"
+    #     )
     user_obj["password"] = get_hashed_password(user_obj["password"])
     user_obj = await User.create(**user_obj)
     new_user = await user_pydanticOut.from_tortoise_orm(user_obj)
