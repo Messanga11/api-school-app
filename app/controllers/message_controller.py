@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends
+from models.guardian_model import Guardian
 from core.settings import AppConfig
 from schema.app_schema import DatalistResponseMembers
 from schema.message import ConversationOut
@@ -76,26 +77,38 @@ async def create_message(message: MessageIn, current_user = Depends(get_current_
             detail="No conversation found"
         )
     
-    user = await User.get(uuid=message_obj.get("receiver_uuid"))
+    user = await User.filter(uuid=message_obj.get("receiver_uuid")).first() if not message_obj.get("receiver_uuid") == "ADMIN" else await Guardian.filter(phone_number=current_user.guardian_phone_number).first()
+    
     if not user:
         raise HTTPException(
             status_code=400,
             detail="No user found"
         )
+    new_message = None
+    if not message_obj.get("receiver_uuid") == "ADMIN":
+        await conversation.members.add(user)
+        await conversation.members.add(current_user)
     
-    await conversation.members.add(user)
-    await conversation.members.add(current_user)
+        message_obj = await Message.create(receiver=user, text=message_obj["text"], conversation_id=conversation.uuid,
+        sender_uuid=current_user.uuid                                   )
+        
+        new_message = await message_pydantic.from_tortoise_orm(message_obj)
+    else:
+        await conversation.update_from_dict({"guardian_id": user.uuid})
+        conversation.save()
     
-    message_obj = await Message.create(receiver=user, text=message_obj["text"], conversation_id=conversation.uuid,
-    sender_uuid=current_user.uuid                                   )
-    
-    new_message = await message_pydantic.from_tortoise_orm(message_obj)
+        message_obj = await Message.create(receiver_guardian_id=user.uuid, text=message_obj["text"], conversation_id=conversation.uuid,
+        sender_uuid=user.uuid                                   )
+        
+        new_message = await message_pydantic.from_tortoise_orm(message_obj)
+        
     return new_message
 
 @router.get("/{conversation_uuid}")
-async def get_messages(conversation_uuid: str):
+async def get_messages(conversation_uuid: str, current_user = Depends(get_current_user)):
+    guardian = await Guardian.filter(phone_number=current_user.guardian_phone_number).first()
     return {
-        "data": await message_pydanticOut.from_queryset(Message.filter(conversation_id=conversation_uuid))
+        "data": await message_pydanticOut.from_queryset(Message.filter(receiver_guardian_id=guardian.uuid)) if conversation_uuid == "ADMIN" else await message_pydanticOut.from_queryset(Message.filter(conversation_id=conversation_uuid))
     }
 
 @router.get("/{id}")

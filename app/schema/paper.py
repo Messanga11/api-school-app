@@ -9,10 +9,10 @@ class QuestionAnswer(BaseModel):
     answers: List[Answer]
 
 class PaperInSchema(BaseModel):
-    subject_id: str = None
-    year: int = None
-    paper_type: str = None
-    visible_for: str = None
+    subject_id: str
+    year: int
+    paper_type: str
+    visible_for: str
     questions: List[QuestionAnswer] = None
 class PaperInUpdateSchema(BaseModel):
     uuid: str

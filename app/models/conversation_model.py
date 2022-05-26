@@ -14,6 +14,7 @@ class Conversation(Model):
     members: fields.ManyToManyRelation[Any] = fields.ManyToManyField(
         "models.User", related_name="conversations", through="user_conversation"
     )
+    guardian: fields.ForeignKeyField("models.Guardian", related_name="messages", null=True)
 pydantic_conversation = pydantic_model_creator(
     Conversation,
     name="Conversation",

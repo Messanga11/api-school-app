@@ -21,9 +21,11 @@ router = APIRouter(
 async def create_user(user: user_pydanticIn):
     user_obj = user.dict(exclude_unset=True)
     
+    print(user_obj)
     hashed_password = get_hashed_password(user_obj["password"])
     
     user_obj["password"] = hashed_password
+    
     
     user_obj = await User.create(**user_obj)
     new_user = await user_pydantic.from_tortoise_orm(user_obj)
@@ -162,9 +164,9 @@ async def update_users(user_in: user_pydanticIn, current_user=Depends(get_curren
             detail="User not exists"
         )
 
-@router.delete("/{id}")
-async def delete_user(id: int):
-    user_in = await User.get(id=id)
+@router.delete("/{uuid}")
+async def delete_user(uuid: str):
+    user_in = await User.get(uuid=uuid)
     if user_in:
         await user_in.delete()
     

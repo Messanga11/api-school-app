@@ -95,7 +95,7 @@ async def user_registration(login_form: login_schema):
     return {
         "message": "Connected successfully",
         "token": token,
-        "type": "SCHOOL"
+        "type": "STUDENT"
     }
     
 @router.post("/login/{guardian_phone_number}")

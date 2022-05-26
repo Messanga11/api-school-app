@@ -42,7 +42,7 @@ async def create_user(user: UserIn):
     #         detail="A user with this guardian phone number already exists"
     #     )
     user_obj["password"] = get_hashed_password(user_obj["password"])
-    user_obj = await User.create(**user_obj)
+    user_obj = await User.create(**user_obj, role="STUDENT")
     new_user = await user_pydanticOut.from_tortoise_orm(user_obj)
     return new_user
 

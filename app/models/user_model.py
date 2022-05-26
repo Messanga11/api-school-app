@@ -15,10 +15,13 @@ class User(Model):
     email = fields.CharField(max_length=200, null=False, unique=True)
     image_url = fields.CharField(max_length=100, null=True, unique=True)
     phone_number = fields.CharField(max_length=9, null=False)
+    gender = fields.CharField(max_length=6, null=False)
+    exam = fields.CharField(max_length=30, null=False)
     selected_exam = fields.JSONField(null=False)
     guardian_phone_number = fields.CharField(max_length=9)
     password = fields.CharField(max_length=100, null=False)
     is_verified = fields.BooleanField(default=False)
+    role = fields.CharField(max_length=10, null=False)
     join_date = fields.DatetimeField(default=datetime.utcnow)
 
 user_pydantic = pydantic_model_creator(User, name="User", exclude=("is_verified", "uuid", ))
