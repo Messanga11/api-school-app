@@ -29,7 +29,7 @@ async def create_file(file:UploadFile=File(...)):
 
 
 def get_image_full_url(url):
-        return AppConfig.API_URL + str(url) if url else ""
+        return (AppConfig.API_URL + str(url)) if url else ""
     
 def save_base64(payload:Base64Payload):
     FILEPATH = "static/files/"

@@ -1,3 +1,4 @@
+import math
 from fastapi import APIRouter, Depends
 from utils import get_image_full_url
 from core.settings import AppConfig
@@ -6,6 +7,7 @@ from schema.student_custom_schema import InvitationOutSchema
 from models.friend_match_model import FriendMatch, friend_match_pydanticOut
 from schema.student_custom_schema import InvitationSchema
 from controllers.auth_controller import get_current_user
+from tortoise.queryset import Q
 
 from auth import *
 from models.user_model import *
@@ -32,8 +34,19 @@ async def create_user(user: user_pydanticIn):
     return new_user
 
 @router.get("/friends")
-async def get_friends(current_user=Depends(get_current_user)):
-    invitations = await FriendMatch.filter(request_user_id=current_user.uuid).filter(accepted=True).all()
+async def get_friends(current_user=Depends(get_current_user), page:int=1, per_page:int=10, keyword:str="",):
+    
+    query_set = FriendMatch.filter(request_user_id=current_user.uuid).filter(accepted=True)
+    
+    if len(keyword) > 0:
+        query_set = query_set.filter(Q(request_user__first_name__icontains=f"{keyword}")| Q(request_user__last_name__icontains=f"{keyword}"))
+    
+    total = await query_set.count()
+    
+    query_set = query_set\
+        .offset(per_page*(page-1))\
+        .limit(per_page)
+    invitations = await query_set.all()
     
     data = []
     for invitation in invitations:
@@ -42,7 +55,11 @@ async def get_friends(current_user=Depends(get_current_user)):
         data.append({**dict(invitation), "request_user": user})
     
     return {
-        "data": data
+        'total': total,
+        "data": data,
+        "current_page": page,
+        "per_page": per_page,
+        "pages":  math.ceil(total/per_page) if per_page != 0 else 0
     }
 
 @router.post("/send-invitation")
@@ -50,13 +67,15 @@ async def send_invitation(payload: InvitationSchema, current_user = Depends(get_
     friend_match = payload.dict(exclude_unset=True)
     
     user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid)
+    user_as_sender = await FriendMatch.filter(request_user_id=friend_match["second_user_uuid"])
     
     user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid)
+    user_as_recever = await FriendMatch.filter(main_user_uuid=friend_match["second_user_uuid"])
     
     if user_as_recever or user_as_sender:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="You are not able to perform this action."
+            detail="An invitation request has already been sent."
         )
     
     friend_match = await FriendMatch.create(request_user_id=friend_match["second_user_uuid"], main_user_uuid=current_user.uuid, accepted=False)
@@ -65,9 +84,19 @@ async def send_invitation(payload: InvitationSchema, current_user = Depends(get_
     return friend_match
 
 @router.get("/invitations/get")
-async def get_invitations(current_user = Depends(get_current_user)):
+async def get_invitations(current_user = Depends(get_current_user), page:int=1, per_page:int=10, keyword:str=""):
+    query_set = FriendMatch.filter(request_user_id=current_user.uuid).filter(accepted=False)
     
-    invitations = await FriendMatch.filter(request_user_id=current_user.uuid).filter(accepted=False).all()
+    if len(keyword) > 0:
+        query_set = query_set.filter(Q(request_user__first_name__icontains=f"{keyword}")| Q(request_user__last_name__icontains=f"{keyword}"))
+    
+    total = await query_set.count()
+    
+    query_set = query_set\
+        .offset(per_page*(page-1))\
+        .limit(per_page)
+
+    invitations = await query_set.all()
     
     data = []
     for invitation in invitations:
@@ -75,7 +104,11 @@ async def get_invitations(current_user = Depends(get_current_user)):
         data.append({**dict(invitation), "request_user": user})
     
     return {
-        "data": data
+        "total": total,
+        "per_page": per_page,
+        "current_page": page,
+        "data": data,
+        "pages":  math.ceil(total/per_page) if per_page != 0 else 0
     }
 
 @router.post("/accept-invitation")
@@ -127,21 +160,37 @@ async def remove_friend(obj_in:AcceptInvitationIn, current_user=Depends(get_curr
     
     
 @router.get("")
-async def get_users(current_user = Depends(get_current_user)):
-    users = await User.exclude(uuid = current_user.uuid).all()
+async def get_users(current_user = Depends(get_current_user), page:int=1, per_page:int=10, keyword:str=""):
+    
+    query_set = User.exclude(uuid = current_user.uuid)
+    
+    if len(keyword) > 0:
+        query_set = query_set.filter(Q(first_name__icontains=f"{keyword}")| Q(last_name__icontains=f"{keyword}"))
+    
+    total = await query_set.count()
+    
+    query_set = query_set\
+        .offset(per_page*(page-1))\
+        .limit(per_page)
+
+    users = await query_set.all()
+    
     users_to_send = []
     for user in users:
-        user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid)
-    
-        user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid)
+        user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid, main_user_uuid=user.uuid).filter(accepted=True).all()
+        user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid, request_user_id=user.uuid).filter(accepted=True).all()
         user.image_url = get_image_full_url(user.image_url)
         user = {
             **dict(user),
-            "is_friend": True if (user_as_recever or user_as_sender) else False,
+            "is_friend": True if ((len(user_as_recever) > 0) or (len(user_as_sender) > 0)) else False,
         }
         users_to_send.append(user)
     return {
-        "data": users_to_send
+        "total": total,
+        "per_page": per_page,
+        "current_page": page,
+        "data": users_to_send,
+        "pages":  math.ceil(total/per_page) if per_page != 0 else 0
     }
 
 @router.get("/{id}")
