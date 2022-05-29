@@ -66,7 +66,7 @@ async def authenticate_user(email, password, ignore_password_check: bool = False
     if user and ignore_password_check:
         return user
 
-    if user and verify_password(password, user["password"]):
+    if user and await verify_password(password, user["password"]):
         return user
     return False
 

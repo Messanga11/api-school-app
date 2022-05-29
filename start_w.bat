@@ -1,1 +1,0 @@
-venv\Scripts\activate & cd app & uvicorn main:app --port=5301 --reload --host=0.0.0.0

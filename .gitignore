@@ -2,3 +2,5 @@ venv
 */static
 */__pycache__
 */database*
+*/*.sh
+*/*.bat
