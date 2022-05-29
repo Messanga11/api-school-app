@@ -24,11 +24,12 @@ async def verify_token(token: str):
                 )
     try:
         payload = jwt.decode(str(token), config_credentials["SECRET"], algorithms=["HS256"])
+        print(payload)
         if dict(payload).get("type") == "SCHOOL":
             school = await School.filter(email=payload["email"]).first()
             return school
         else:
-            user = await User.get(uuid = payload["user"]["uuid"])
+            user = await User.get_or_none(uuid = payload["user"]["uuid"])
             return user
     except:
         raise HTTPException(
