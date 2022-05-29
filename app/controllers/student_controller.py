@@ -51,9 +51,16 @@ async def get_friends(current_user=Depends(get_current_user), page:int=1, per_pa
     data = []
     for invitation in invitations:
         user = await User.get(uuid=invitation.main_user_uuid).first()
-        user.image_url = get_image_full_url(user.image_url)
+        print(user.uuid == current_user.uuid)
+        print(invitation.main_user_uuid)
+        print(invitation.request_user_id)
+        print(current_user.uuid)
+        print(user.uuid)
         if user.uuid == current_user.uuid:
             user = await User.get(uuid=invitation.request_user_id).first()
+        print("---------")
+        print(user.uuid)
+        user.image_url = get_image_full_url(user.image_url)
         data.append({**dict(invitation), "request_user": user})
     
     return {
