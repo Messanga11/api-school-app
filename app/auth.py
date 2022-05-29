@@ -23,7 +23,7 @@ async def verify_token(token: str):
                     headers=["WWW-Authenticate", "Bearer"]
                 )
     try:
-        payload = jwt.decode(token, config_credentials["SECRET"], algorithms=["HS256"])
+        payload = jwt.decode(str(token), config_credentials["SECRET"], algorithms=["HS256"])
         if dict(payload).get("type") == "SCHOOL":
             school = await School.filter(email=payload["email"]).first()
             return school
