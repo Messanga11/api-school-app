@@ -75,11 +75,11 @@ async def get_friends(current_user=Depends(get_current_user), page:int=1, per_pa
 async def send_invitation(payload: InvitationSchema, current_user = Depends(get_current_user)):
     friend_match = payload.dict(exclude_unset=True)
     
-    user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid)
-    user_as_sender = await FriendMatch.filter(request_user_id=friend_match["second_user_uuid"])
+    user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid, main_user_uuid=friend_match["second_user_uuid"])
+    user_as_sender = await FriendMatch.filter(request_user_id=friend_match["second_user_uuid"], main_user_uuid=current_user.uuid)
     
-    user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid)
-    user_as_recever = await FriendMatch.filter(main_user_uuid=friend_match["second_user_uuid"])
+    user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid, request_user_id=friend_match["second_user_uuid"])
+    user_as_recever = await FriendMatch.filter(main_user_uuid=friend_match["second_user_uuid"], request_user_id=current_user.uuid)
     
     if user_as_recever or user_as_sender:
         raise HTTPException(
