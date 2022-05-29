@@ -36,7 +36,7 @@ async def create_user(user: user_pydanticIn):
 @router.get("/friends")
 async def get_friends(current_user=Depends(get_current_user), page:int=1, per_page:int=10, keyword:str="",):
     
-    query_set = FriendMatch.filter(request_user_id=current_user.uuid).filter(accepted=True)
+    query_set = FriendMatch.filter(Q(request_user_id=current_user.uuid)| Q(main_user_uuid=current_user.uuid)).filter(accepted=True)
     
     if len(keyword) > 0:
         query_set = query_set.filter(Q(request_user__first_name__icontains=f"{keyword}")| Q(request_user__last_name__icontains=f"{keyword}"))
