@@ -1,5 +1,5 @@
 TORTOISE_ORM = {
-    "connections": {"default": "mysql://paul:stringstring@127.0.0.1:3306/us"},
+    "connections": {"default": "sqlite://database.sqlite3"},
     "apps": {
         "models": {
             "models": ["models", "aerich.models"],
