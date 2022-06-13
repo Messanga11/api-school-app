@@ -51,15 +51,8 @@ async def get_friends(current_user=Depends(get_current_user), page:int=1, per_pa
     data = []
     for invitation in invitations:
         user = await User.get(uuid=invitation.main_user_uuid).first()
-        print(user.uuid == current_user.uuid)
-        print(invitation.main_user_uuid)
-        print(invitation.request_user_id)
-        print(current_user.uuid)
-        print(user.uuid)
         if user.uuid == current_user.uuid:
             user = await User.get(uuid=invitation.request_user_id).first()
-        print("---------")
-        print(user.uuid)
         user.image_url = get_image_full_url(user.image_url)
         data.append({**dict(invitation), "request_user": user})
     
@@ -71,15 +64,23 @@ async def get_friends(current_user=Depends(get_current_user), page:int=1, per_pa
         "pages":  math.ceil(total/per_page) if per_page != 0 else 0
     }
 
+@router.get("/invitations/total")
+async def get_friends(current_user=Depends(get_current_user), page:int=1, per_page:int=10, keyword:str="",):
+    
+    query_set = FriendMatch.filter(Q(request_user_id=current_user.uuid)| Q(main_user_uuid=current_user.uuid)).filter(accepted=False)
+    return {
+        "data": query_set.count(),
+    }
+
 @router.post("/send-invitation")
 async def send_invitation(payload: InvitationSchema, current_user = Depends(get_current_user)):
     friend_match = payload.dict(exclude_unset=True)
     
-    user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid, main_user_uuid=friend_match["second_user_uuid"])
-    user_as_sender = await FriendMatch.filter(request_user_id=friend_match["second_user_uuid"], main_user_uuid=current_user.uuid)
+    user_as_sender = await FriendMatch.filter(Q(request_user_id=current_user.uuid) & Q(main_user_uuid=friend_match["second_user_uuid"]))
+    user_as_sender = await FriendMatch.filter(Q(request_user_id=friend_match["second_user_uuid"]) & Q(main_user_uuid=current_user.uuid))
     
-    user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid, request_user_id=friend_match["second_user_uuid"])
-    user_as_recever = await FriendMatch.filter(main_user_uuid=friend_match["second_user_uuid"], request_user_id=current_user.uuid)
+    user_as_recever = await FriendMatch.filter(Q(request_user_id=friend_match["second_user_uuid"]) & Q(main_user_uuid=current_user.uuid))
+    user_as_recever = await FriendMatch.filter(Q(main_user_uuid=friend_match["second_user_uuid"]) & Q(request_user_id=current_user.uuid))
     
     if user_as_recever or user_as_sender:
         raise HTTPException(
@@ -90,7 +91,7 @@ async def send_invitation(payload: InvitationSchema, current_user = Depends(get_
     friend_match = await FriendMatch.create(request_user_id=friend_match["second_user_uuid"], main_user_uuid=current_user.uuid, accepted=False)
 
     # friend_match = await friend_match_pydanticOut.from_tortoise_orm(friend_match)
-    return friend_match
+    return friend_match 
 
 @router.get("/invitations/get")
 async def get_invitations(current_user = Depends(get_current_user), page:int=1, per_page:int=10, keyword:str=""):
@@ -121,7 +122,7 @@ async def get_invitations(current_user = Depends(get_current_user), page:int=1, 
     }
 
 @router.post("/accept-invitation")
-async def get_invitations(obj_in:AcceptInvitationIn, current_user = Depends(get_current_user)):
+async def accept_invitation(obj_in:AcceptInvitationIn, current_user = Depends(get_current_user)):
     
     obj_in = obj_in.dict(exclude_unset=True)
     
@@ -186,12 +187,15 @@ async def get_users(current_user = Depends(get_current_user), page:int=1, per_pa
     
     users_to_send = []
     for user in users:
-        user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid, main_user_uuid=user.uuid).filter(accepted=True).all()
-        user_as_recever = await FriendMatch.filter(main_user_uuid=current_user.uuid, request_user_id=user.uuid).filter(accepted=True).all()
+        user_as_sender = await FriendMatch.filter(request_user_id=current_user.uuid, main_user_uuid=user.uuid).all()
+        user_as_receiver = await FriendMatch.filter(main_user_uuid=current_user.uuid, request_user_id=user.uuid).all()
+        user_as_sender_ = await FriendMatch.filter(request_user_id=current_user.uuid, main_user_uuid=user.uuid).all()
+        user_as_receiver_ = await FriendMatch.filter(main_user_uuid=current_user.uuid, request_user_id=user.uuid).all()
         user.image_url = get_image_full_url(user.image_url)
         user = {
             **dict(user),
-            "is_friend": True if ((len(user_as_recever) > 0) or (len(user_as_sender) > 0)) else False,
+            "is_friend": True if ((len(user_as_receiver) > 0) or (len(user_as_sender) > 0)) else False,
+            "is_accepted": True if ((len(user_as_sender_) > 0) or (len(user_as_receiver_) > 0)) else False,
         }
         users_to_send.append(user)
     return {

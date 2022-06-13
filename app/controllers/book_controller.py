@@ -1,4 +1,5 @@
 import base64
+from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from utils import get_image_full_url
 from controllers.auth_controller import get_current_user
@@ -18,18 +19,27 @@ router = APIRouter(
 @router.post("")
 async def create_book(title=Form(...), type=Form(...), topic_uuid=Form(...), file:UploadFile=File(...)):
     
+    if not type in ["lib_book", "book", "video", "note", "video_vip"]:
+        raise HTTPException(status_code=400, detail="Invalid type")
+
+    if type != "lib_book" and topic_uuid == "nothing":
+        raise HTTPException(status_code=422, detail="Fill all fields")
+        
+    
     book_obj = {
         "title": title,
         "type": type,
-        "topic_uuid": topic_uuid,
+        "topic_uuid": None if topic_uuid == "nothing" else topic_uuid,
     }
-    topic = await Topic.get(uuid = book_obj["topic_uuid"])
+    
+    if not type == "lib_book":
+        topic = await Topic.get(uuid = book_obj["topic_uuid"])
 
-    if not topic:
-        raise HTTPException(
-            status_code=404,
-            detail="Topic not exist"
-        )
+        if not topic:
+            raise HTTPException(
+                status_code=404,
+                detail="Topic not exist"
+            )
     
     url = await create_file(file)
 
@@ -39,15 +49,31 @@ async def create_book(title=Form(...), type=Form(...), topic_uuid=Form(...), fil
     return new_book
 
 @router.get("")
-async def get_books():
-    books = await FileModel.all()
+async def get_books(type:str = None, current_user:User=Depends(get_current_user)):
+        
+    if type == None:
+        if current_user.role != AppConfig.AppRoles.SUPER_ADMIN:
+            # raise HTTPException(status_code=401, detail="Invalid params")
+            pass
+        else:
+            return {
+                "data": await FileModel.all()
+            }
+            
     
-    for book in books:
-        book.url = get_image_full_url(book.url)
+    if not type in ["lib_book", "book", "video", "note", "video_vip"]:
+        raise HTTPException(status_code=400, detail="Invalid type")
     
-    return {
-        "data": books
-    }
+    
+    else:
+        books = await FileModel.filter(type=type).all()
+    
+        for book in books:
+            book.url = get_image_full_url(book.url)
+        
+        return {
+            "data": books
+        }
 
 @router.get("/{topic_uuid}")
 async def get_books(topic_uuid:str):

@@ -1,0 +1,4 @@
+aerich init -t migration_config.TORTOISE_ORM -s ./
+aerich init-db
+aerich migrate --name drop_column
+aerich upgrade

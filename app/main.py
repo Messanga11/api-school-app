@@ -1,7 +1,6 @@
 from tortoise.contrib.fastapi import register_tortoise
 from fastapi import FastAPI
 from controllers.router import api_router
-
 from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.staticfiles import StaticFiles
@@ -25,7 +24,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 register_tortoise(
     app,
     db_url="sqlite://database.sqlite3",
-    modules={"models" : ["models"]},
+    modules={"models" : ["models", "aerich.models"]},
     generate_schemas=True,
     add_exception_handlers=True
 )

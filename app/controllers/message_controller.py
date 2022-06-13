@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends
 from models.guardian_model import Guardian
 from core.settings import AppConfig
@@ -109,6 +109,16 @@ async def get_messages(conversation_uuid: str, current_user = Depends(get_curren
     guardian = await Guardian.filter(phone_number=current_user.guardian_phone_number).first()
     return {
         "data": await message_pydanticOut.from_queryset(Message.filter(receiver_guardian_id=guardian.uuid)) if conversation_uuid == "ADMIN" else await message_pydanticOut.from_queryset(Message.filter(conversation_id=conversation_uuid))
+    }
+
+@router.get("/unread/total")
+async def get_messages_count(conversation_uuid: Optional[str] = None, current_user = Depends(get_current_user)):
+    guardian = await Guardian.filter(phone_number=current_user.guardian_phone_number).first()
+    count = await Message.filter(receiver_guardian_id=guardian.uuid).filter(unread=True).count() if conversation_uuid == "ADMIN" else await Message.filter(unread=True).count()
+    print("count"*50)
+    print(count)
+    return {
+        "data": count
     }
 
 @router.get("/{id}")

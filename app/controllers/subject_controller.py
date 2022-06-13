@@ -28,8 +28,15 @@ async def create_subject(subject: subject_pydanticIn,):
     return new_subject
 
 @router.get("")
-async def get_subjects():
-    subjects = await subject_pydanticOut.from_queryset(Subject.all())
+async def get_subjects(type:str, current_user:User = Depends(get_current_user)):
+    subjects = []
+    # if current_user.role == AppConfig.AppRoles.SUPER_ADMIN:
+    if type:
+        subjects = await subject_pydanticOut.from_queryset(Subject.filter(visible_for=type).all())
+    # if current_user.role != AppConfig.AppRoles.STUDENT:
+    else:
+        subjects = await subject_pydanticOut.from_queryset(Subject.all())
+        
     return {
         "data": subjects
     }

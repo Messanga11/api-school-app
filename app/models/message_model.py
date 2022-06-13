@@ -9,6 +9,7 @@ class Message(Model):
     text = fields.TextField()
     receiver = fields.ForeignKeyField("models.User", related_name="messages", null=True)
     receiver_guardian = fields.ForeignKeyField("models.Guardian", related_name="messages", null=True)
+    unread = fields.BooleanField(default=False)
     sender_uuid = fields.CharField(max_length=100, null=False)
     created_at = fields.DatetimeField(auto_now_add=True)
     

@@ -48,7 +48,7 @@ async def get_topics(subject_uuid: str):
             detail="Subject not exist"
         )
 
-    topics = await Topic.filter(subject_uuid=subject_uuid)
+    topics = await Topic.filter(subject_uuid=subject_uuid).all()
     return {
         "data": topics
     }
