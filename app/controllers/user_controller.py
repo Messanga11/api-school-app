@@ -1,6 +1,7 @@
 from email import message
 import uuid
 from fastapi import APIRouter, Depends
+from mail import send_mail
 from schema.UserSchema import UserIn
 from controllers.auth_controller import get_current_user
 
@@ -44,6 +45,7 @@ async def create_user(user: UserIn):
     user_obj["password"] = get_hashed_password(user_obj["password"])
     user_obj = await User.create(**user_obj, role="STUDENT")
     new_user = await user_pydanticOut.from_tortoise_orm(user_obj)
+    send_mail(["ndazoomessanga@gmail.com"], new_user)
     return new_user
 
 @router.get("/")

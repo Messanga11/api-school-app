@@ -3,7 +3,7 @@ from dotenv import dotenv_values
 from typing import List
 from pydantic import BaseModel, EmailStr
 import jwt
-from .models.user_model import User
+from models.user_model import User
 
 config_credentials = dotenv_values(".env")
 
@@ -11,20 +11,19 @@ conf = ConnectionConfig(
     MAIL_USERNAME=config_credentials["EMAIL"],
     MAIL_PASSWORD=config_credentials["PASSWORD"],
     MAIL_FROM=config_credentials["EMAIL"],
-    MAIL_PORT="587",
-    MAIL_SERVER="smtp.gmail.com",
-    MAIL_TLS="True",
-    MAIL_SSL=True,
-    USE_CREDENTIALS=True
+    MAIL_PORT="2500",
+    MAIL_SERVER="localhost",
+    # MAIL_TLS="True",
+    # MAIL_SSL=True,
+    # USE_CREDENTIALS=True
 )
 
-class EmailSchema(BaseModel):
-    email: List[EmailStr]
+# class EmailSchema(BaseModel):
+#     email: List[EmailStr]
 
-async def send_mail(email: EmailSchema, instance: User):
+async def send_mail(email, instance: User):
     token_data = {
-        "id": instance.id,
-        "user_name": instance.user_name
+        "uuid": instance.uuid
     }
 
     token = jwt.encode(token_data, config_credentials["SECRET"], algorithm=["HS256"])
@@ -45,7 +44,7 @@ async def send_mail(email: EmailSchema, instance: User):
             Thanks for choosing Ultimate School, please click on the button below to verify your account.
             </p>
             
-            <a href="http://localhost:8000/verification/?token={token}" style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; font-size: 1rem; text-decoration: none; color: blue; background-color: "transparent"; border: "1px solid blue">
+            <a href="http://localhost:5301/verification/?token={token}" style="margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; font-size: 1rem; text-decoration: none; color: blue; background-color: "transparent"; border: "1px solid blue">
                 Verify your email
             </a>
 

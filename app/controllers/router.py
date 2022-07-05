@@ -12,9 +12,11 @@ from .school_post_controller import router as school_post
 from .message_controller import router as message
 from .paper_controller import router as paper
 from .file import router as files
+from controllers.webstreaming import router as webstreaming_router
 
 api_router = APIRouter()
 
+api_router.include_router(webstreaming_router)
 api_router.include_router(auth)
 api_router.include_router(paper)
 api_router.include_router(student)

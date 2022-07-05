@@ -121,7 +121,7 @@ async def email_verification(request:Request, token:str):
     if user and not user.is_verified:
         user.is_verified = True
         await user.save()
-        return templates.TemplateResponse("verification.html",{"request": request, "username": user.user_name})
+        return templates.TemplateResponse("verification.html",{"request": request, "first_name": user.first_name})
     raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
